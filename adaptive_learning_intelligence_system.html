@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020c1b;--card:rgba(5,16,35,0.94);--input:rgba(2,10,24,0.88);
+  --accent:#00c8ff;--dim:rgba(0,200,255,0.07);--mid:rgba(0,200,255,0.28);
+  --green:#10d9a0;--orange:#fb923c;--red:#f87171;--yellow:#fbbf24;
+  --purple:#a78bfa;--pink:#f472b6;
+  --text:#dff0ff;--muted:#4d6e88;--border:rgba(0,200,255,0.11);
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+.font-h{font-family:'Syne',sans-serif}
+.font-m{font-family:'JetBrains Mono',monospace}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(0,200,255,.25);border-radius:2px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:.85;transform:scale(1.04)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.a0{animation:fadeUp .55s ease both}
+.a1{animation:fadeUp .55s .08s ease both}
+.a2{animation:fadeUp .55s .16s ease both}
+.a3{animation:fadeUp .55s .24s ease both}
+.a4{animation:fadeUp .55s .32s ease both}
+.a5{animation:fadeUp .55s .40s ease both}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;backdrop-filter:blur(20px)}
+.label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.5px}
+.inp{width:100%;padding:11px 14px;background:var(--input);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+.inp:focus{border-color:var(--mid)}
+.btn-primary{padding:13px;font-size:14px;font-weight:600;font-family:'Syne',sans-serif;background:linear-gradient(135deg,var(--accent),#005eff);color:#000;border:none;border-radius:12px;cursor:pointer;width:100%}
+.btn-ghost{padding:13px;font-size:13px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:12px;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif}
+.range-wrap{margin-bottom:18px}
+.range-row{display:flex;justify-content:space-between;margin-bottom:6px;align-items:center}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:rgba(0,200,255,.12);border-radius:2px;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px rgba(0,200,255,.4)}
+select option{background:#020c1b;color:var(--text)}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.tag{font-size:11px;padding:4px 11px;border-radius:100px;background:var(--dim);color:var(--accent);border:1px solid var(--border)}
+.hidden{display:none}
+.progress-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.07);transition:background .3s}
+.progress-bar.active{background:var(--accent)}
+.dot-live{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.5s ease-in-out infinite;display:inline-block}
+.orb{position:absolute;border-radius:50%;pointer-events:none}
+.stripe{display:inline-flex;align-items:center;gap:8px;padding:5px 16px;border-radius:100px;border:1px solid rgba(0,200,255,.15);background:rgba(0,200,255,.05);font-size:11px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:24px}
+.tip-row{display:flex;gap:8px;padding:10px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(0,200,255,.07)}
+.rec-card{display:flex;gap:12px;padding:14px;border-radius:12px;background:rgba(0,200,255,.03);border:1px solid rgba(0,200,255,.07)}
+.perf-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:100px}
+.stat-card{text-align:center;padding:18px 12px}
+.back-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 0 12px;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif}
+.tog-btn{flex:1;padding:9px;font-size:13px;border-radius:8px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+#app{overflow-x:hidden}
+.screen{min-height:100vh}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ── ML ENGINE ─────────────────────────────────────────────────────────────────
+
+// Linear Regression calibrated to N=200 students, μ=61.82%, σ=11.28%
+// Weights from RF feature importances: quiz(0.30), assign(0.22), attend(0.06)
+function predictScore(f){
+  var M={High:1,Medium:.5,Low:0}[f.motivationLevel]||.5;
+  var R={'Daily':1,'Twice a week':.75,'Once a week':.5,'Rarely':.25,'Never':0}[f.revisionFreq]||.5;
+  var raw=8+f.quizScore*.30+f.assignmentScore*.22+f.attendance*.06+
+    f.studyHours*1.5+(f.practiceQuestions/200)*5+f.sleepHours*.5+M*4+R*2;
+  return Math.round(Math.min(95,Math.max(30,raw))*10)/10;
+}
+
+// LIQ: z-score mapped to IQ scale (μ=100, σ=15)
+function scoreLIQ(s){return Math.round(Math.min(145,Math.max(60,100+((s-61.82)/11.28)*15)));}
+
+function getBandLIQ(l){
+  if(l>=130)return{label:'Exceptional Learner',desc:'Top 2% learning potential',color:'#fbbf24'};
+  if(l>=120)return{label:'High Intelligence',desc:'Top 10% learning efficiency',color:'#10d9a0'};
+  if(l>=110)return{label:'Above Average',desc:'Strong cognitive aptitude',color:'#60a5fa'};
+  if(l>=90)return{label:'Average Intelligence',desc:'Solid learning foundation',color:'#00c8ff'};
+  if(l>=80)return{label:'Developing',desc:'Growing with targeted support',color:'#fb923c'};
+  return{label:'Needs Support',desc:'Structured intervention recommended',color:'#f87171'};
+}
+
+function getPerfCat(s){
+  if(s>=70)return{label:'High Performer',color:'#10d9a0',icon:'🏆',bg:'rgba(16,217,160,.07)'};
+  if(s>=50)return{label:'Average Performer',color:'#00c8ff',icon:'📊',bg:'rgba(0,200,255,.07)'};
+  return{label:'Needs Improvement',color:'#fb923c',icon:'📈',bg:'rgba(251,146,60,.07)'};
+}
+
+function getLetterGrade(s){
+  if(s>=80)return{g:'A+',gpa:'5.0',c:'#fbbf24'};
+  if(s>=75)return{g:'A',gpa:'4.0',c:'#10d9a0'};
+  if(s>=65)return{g:'B',gpa:'3.0',c:'#60a5fa'};
+  if(s>=55)return{g:'C',gpa:'2.0',c:'#00c8ff'};
+  if(s>=45)return{g:'D',gpa:'1.0',c:'#fb923c'};
+  return{g:'F',gpa:'0.0',c:'#f87171'};
+}
+
+function detectCluster(f){
+  var v=0,ff=0,p=0,r=0;
+  if(f.preferredStyle==='Video')v+=3;
+  if(f.preferredStyle==='Mixed')v+=1.5;
+  if(f.quizScore>=75&&f.studyHours<4)ff+=2;
+  if(f.quizScore/Math.max(f.studyHours,.5)>18)ff+=1.5;
+  if(f.practiceQuestions<80)ff+=1;
+  if(f.practiceQuestions>130)p+=2;
+  if(f.preferredStyle==='Practice')p+=2;
+  var rv={'Daily':3,'Twice a week':2,'Once a week':1,'Rarely':0,'Never':0};
+  r+=(rv[f.revisionFreq]||0);
+  if(f.preferredStyle==='Reading')r+=1.5;
+  var all={'Visual Learner':v,'Fast Learner':ff,'Practice-Based':p,'Revision-Based':r};
+  return Object.entries(all).sort(function(a,b){return b[1]-a[1];})[0][0];
+}
+
+var PROFILES={
+  'Visual Learner':{icon:'🎥',color:'#818cf8',pct:'32%',
+    desc:'You learn best through video demonstrations, visual diagrams, and animated content.',
+    strengths:['Spatial reasoning','Pattern recognition','Holistic thinking'],
+    tips:['Watch lectures on Khan Academy or YouTube before class','Create mind maps and concept diagrams for each chapter','Use animated explainers for complex topics','Turn notes into visual infographics before exams']},
+  'Fast Learner':{icon:'⚡',color:'#10d9a0',pct:'30%',
+    desc:'You grasp concepts quickly and excel under focused, efficient study sessions.',
+    strengths:['Quick comprehension','Analytical reasoning','Efficient recall'],
+    tips:['Tackle advanced problems and challenges beyond your syllabus','Enroll in an accelerated MOOC course this semester','Mentor peers — teaching deepens your own mastery','Join hackathons and project-based learning opportunities']},
+  'Practice-Based':{icon:'🔁',color:'#fb923c',pct:'17.5%',
+    desc:'You consolidate knowledge through repetition, drills, and hands-on problem-solving.',
+    strengths:['Procedural mastery','Consistency','Applied knowledge'],
+    tips:['Complete 20+ practice questions daily across weak topics','Use timed drills on Quizlet and past exam papers','Study fully worked solutions step-by-step','Build small projects to bridge theory and practice']},
+  'Revision-Based':{icon:'📚',color:'#f472b6',pct:'20.5%',
+    desc:'You excel through disciplined review, spaced repetition, and structured study schedules.',
+    strengths:['Long-term retention','Discipline','Systematic learning'],
+    tips:['Build Anki spaced repetition decks for every subject','Schedule Monday/Thursday weekly recap sessions','Write topic summaries in your own words for deep encoding','Review notes before sleep for memory consolidation']},
+};
+
+function buildRecs(score,liq,cl){
+  var out=[];
+  if(score<50){
+    out.push({i:'🎯',t:'Meet your academic advisor this week to design a structured support plan.'});
+    out.push({i:'📋',t:'Reduce subject load by one unit to focus energy on your core modules.'});
+  }else if(score<70){
+    out.push({i:'📈',t:'Add 30 minutes of focused daily study to shift toward high-performer territory.'});
+    out.push({i:'✅',t:'Prioritize quiz and assignment performance — they are the strongest grade predictors.'});
+  }else{
+    out.push({i:'🚀',t:'Apply for advanced coursework, research programs, or internship opportunities.'});
+    out.push({i:'👥',t:'Take on a peer tutoring role — teaching is the deepest form of mastery.'});
+  }
+  var pr={
+    'Visual Learner':[{i:'🎬',t:'Subscribe to 3Blue1Brown, CrashCourse, or MIT OCW for visual learning.'},{i:'🗺️',t:'Use Notion or Canva to turn your notes into visual one-pagers before exams.'}],
+    'Fast Learner':[{i:'⚡',t:'Join Kaggle competitions or LeetCode challenges to stretch your intellect.'},{i:'🔬',t:'Pitch a mini research project to your department supervisor this semester.'}],
+    'Practice-Based':[{i:'✏️',t:'Use ExamFocus or PastQuestions.com for 30+ exam-style drill questions daily.'},{i:'⏱️',t:'Time each topic with a 25-min Pomodoro timer and self-grade after every session.'}],
+    'Revision-Based':[{i:'🔄',t:'Build 20 Anki flashcards per topic before your next revision block.'},{i:'📅',t:'Create a weekly planner with Monday and Thursday recap days built in.'}],
+  };
+  out=out.concat(pr[cl]||[]);
+  if(liq<90){
+    out.push({i:'💤',t:'Target 7–8 hours of sleep — deep sleep is when cognitive consolidation happens.'});
+    out.push({i:'🧠',t:'Replace passive re-reading with active recall: close notes and self-test.'});
+  }
+  if(liq>=120)out.push({i:'🌟',t:'Your LIQ qualifies for merit scholarships — check your institution\'s listings.'});
+  return out.slice(0,6);
+}
+
+function buildRadar(f){
+  return[
+    {s:'Quiz',v:Math.round(f.quizScore)},
+    {s:'Assignments',v:Math.round(f.assignmentScore)},
+    {s:'Attendance',v:Math.round(f.attendance)},
+    {s:'Study Hours',v:Math.round((f.studyHours/8)*100)},
+    {s:'Practice',v:Math.round((f.practiceQuestions/200)*100)},
+    {s:'Wellness',v:Math.round((f.sleepHours/10)*100)},
+  ];
+}
+
+// ── SVG GAUGE ─────────────────────────────────────────────────────────────────
+function buildGauge(liqVal,color){
+  var r=60,cx=84,cy=88;
+  var pct=Math.min(1,Math.max(0,(liqVal-60)/85));
+  function toRad(d){return d*Math.PI/180;}
+  function pt(d){return[cx+r*Math.cos(toRad(d)),cy+r*Math.sin(toRad(d))];}
+  var s=pt(145),e=pt(35);
+  var trackPath='M'+s[0].toFixed(1)+' '+s[1].toFixed(1)+' A'+r+' '+r+' 0 1 1 '+e[0].toFixed(1)+' '+e[1].toFixed(1);
+  var progSVG='';
+  if(pct>0.01){
+    var pd=145+pct*250;
+    var p=pt(pd);
+    var la=pct*250>180?1:0;
+    var pPath='M'+s[0].toFixed(1)+' '+s[1].toFixed(1)+' A'+r+' '+r+' 0 '+la+' 1 '+p[0].toFixed(1)+' '+p[1].toFixed(1);
+    var glowId='g'+Math.random().toString(36).slice(2,6);
+    progSVG='<defs><linearGradient id="'+glowId+'" x1="0" y1="1" x2="1" y2="0">'+
+      '<stop offset="0%" stop-color="'+color+'" stop-opacity=".3"/>'+
+      '<stop offset="100%" stop-color="'+color+'"/></linearGradient></defs>'+
+      '<path d="'+pPath+'" fill="none" stroke="url(#'+glowId+')" stroke-width="12" stroke-linecap="round"/>'+
+      '<path d="'+pPath+'" fill="none" stroke="'+color+'" stroke-width="3" stroke-linecap="round" opacity=".25" style="filter:drop-shadow(0 0 5px '+color+')"/>';
+  }
+  return '<svg viewBox="0 0 168 142" style="width:100%;max-width:200px">'+
+    '<path d="'+trackPath+'" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="12" stroke-linecap="round"/>'+
+    progSVG+
+    '<text x="'+cx+'" y="'+(cy-8)+'" text-anchor="middle" fill="#dff0ff" font-size="26" font-weight="700" font-family="monospace">'+liqVal+'</text>'+
+    '<text x="'+cx+'" y="'+(cy+9)+'" text-anchor="middle" fill="#4d6e88" font-size="10" font-family="sans-serif">LIQ Score</text>'+
+    '<text x="'+(s[0]-5).toFixed(1)+'" y="'+(s[1]+5).toFixed(1)+'" text-anchor="end" fill="#4d6e88" font-size="8">60</text>'+
+    '<text x="'+(e[0]+5).toFixed(1)+'" y="'+(e[1]+5).toFixed(1)+'" text-anchor="start" fill="#4d6e88" font-size="8">145</text>'+
+    '</svg>';
+}
+
+// ── RADAR CHART (SVG) ─────────────────────────────────────────────────────────
+function buildRadarSVG(data,color){
+  var cx=150,cy=145,r=100;
+  var n=data.length;
+  var labels=data.map(function(d){return d.s;});
+  var values=data.map(function(d){return d.v/100;});
+  function angleFor(i){return(i/n)*2*Math.PI-Math.PI/2;}
+  function ptFor(i,frac){
+    var a=angleFor(i);
+    return[cx+r*frac*Math.cos(a),cy+r*frac*Math.sin(a)];
+  }
+  // Grid rings
+  var rings='';
+  for(var ring=1;ring<=4;ring++){
+    var frac=ring/4;
+    var pts=[];
+    for(var i=0;i<n;i++){var p=ptFor(i,frac);pts.push(p[0].toFixed(1)+','+p[1].toFixed(1));}
+    rings+='<polygon points="'+pts.join(' ')+'" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1"/>';
+  }
+  // Axes
+  var axes='';
+  for(var i=0;i<n;i++){
+    var p=ptFor(i,1);
+    axes+='<line x1="'+cx+'" y1="'+cy+'" x2="'+p[0].toFixed(1)+'" y2="'+p[1].toFixed(1)+'" stroke="rgba(255,255,255,.06)" stroke-width="1"/>';
+  }
+  // Data polygon
+  var dataPts=[];
+  for(var i=0;i<n;i++){var p=ptFor(i,values[i]);dataPts.push(p[0].toFixed(1)+','+p[1].toFixed(1));}
+  var dataArea='<polygon points="'+dataPts.join(' ')+'" fill="'+color+'" fill-opacity="0.12" stroke="'+color+'" stroke-width="2" stroke-linejoin="round"/>';
+  // Dots
+  var dots='';
+  for(var i=0;i<n;i++){var p=ptFor(i,values[i]);dots+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4" fill="'+color+'" />';}
+  // Labels + value boxes
+  var lbls='';
+  for(var i=0;i<n;i++){
+    var p=ptFor(i,1.3);
+    var tx=parseFloat(p[0].toFixed(1));
+    var ty=parseFloat(p[1].toFixed(1));
+    var anchor=tx<cx-5?'end':tx>cx+5?'start':'middle';
+    lbls+='<text x="'+tx+'" y="'+(ty+4)+'" text-anchor="'+anchor+'" fill="#4d6e88" font-size="11" font-family="DM Sans,sans-serif">'+labels[i]+'</text>';
+    var vp=ptFor(i,values[i]);
+    var vx=parseFloat(vp[0].toFixed(1)),vy=parseFloat(vp[1].toFixed(1));
+    lbls+='<text x="'+(vx+(vx<cx?-7:vx>cx+3?7:0))+'" y="'+(vy-8)+'" text-anchor="middle" fill="'+color+'" font-size="9" font-weight="600" font-family="monospace">'+data[i].v+'%</text>';
+  }
+  return '<svg viewBox="0 0 300 290" style="width:100%;max-width:340px;display:block;margin:auto">'+rings+axes+dataArea+dots+lbls+'</svg>';
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var INIT={studentName:'',age:20,gender:'Male',preferredStyle:'Video',
+  quizScore:50,assignmentScore:50,previousGPA:'3.0',studyHours:3.5,
+  attendance:75,practiceQuestions:100,revisionFreq:'Once a week',noSubjects:'5',
+  sleepHours:7,motivationLevel:'Medium',extracurricular:'No',internetAccess:'Yes',partTimeJob:'No'};
+
+var state={screen:'hero',step:1,form:Object.assign({},INIT),results:null};
+
+function setForm(k,v){state.form[k]=v;}
+
+function analyze(){
+  var f=state.form;
+  var score=predictScore(f);
+  var liqVal=scoreLIQ(score);
+  var cluster=detectCluster(f);
+  state.results={
+    score:score,liqVal:liqVal,cluster:cluster,
+    perfData:getPerfCat(score),
+    liqData:getBandLIQ(liqVal),
+    gradeData:getLetterGrade(score),
+    recs:buildRecs(score,liqVal,cluster),
+    radar:buildRadar(f),
+  };
+  state.screen='results';
+  render();
+  window.scrollTo(0,0);
+}
+
+// ── SCREENS ───────────────────────────────────────────────────────────────────
+
+function renderHero(){
+  var stats=[{v:'200',l:'Students Analyzed'},{v:'16',l:'Learning Features'},{v:'86%',l:'RF Accuracy'},{v:'4',l:'Learner Profiles'}];
+  var statCards=stats.map(function(s){
+    return '<div class="card stat-card"><div class="font-m" style="font-size:22px;font-weight:700;color:var(--accent)">'+s.v+'</div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4">'+s.l+'</div></div>';
+  }).join('');
+  return '<div class="screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;position:relative;background-image:linear-gradient(rgba(0,200,255,.022)1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,.022)1px,transparent 1px);background-size:44px 44px">'+
+    '<div class="orb" style="top:15%;left:5%;width:300px;height:300px;background:radial-gradient(circle,rgba(0,200,255,.055)0%,transparent 70%);animation:pulse 7s ease-in-out infinite"></div>'+
+    '<div class="orb" style="bottom:15%;right:5%;width:240px;height:240px;background:radial-gradient(circle,rgba(167,139,250,.07)0%,transparent 70%);animation:pulse 9s 3s ease-in-out infinite"></div>'+
+    '<div class="stripe a0"><span class="dot-live"></span>ML-Powered Learning Analysis Engine</div>'+
+    '<h1 class="font-h a1" style="font-size:clamp(34px,6vw,66px);font-weight:800;text-align:center;line-height:1.06;margin-bottom:18px;background:linear-gradient(130deg,#fff 35%,var(--accent) 80%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;opacity:0">Adaptive Learning<br>Intelligence System</h1>'+
+    '<p class="a2" style="font-size:clamp(14px,1.8vw,17px);color:var(--muted);text-align:center;max-width:480px;line-height:1.75;margin-bottom:44px;opacity:0">Detect your learning profile, compute your Learning Intelligence Quotient, and receive personalized educational strategies — powered by ML trained on 200 students.</p>'+
+    '<div class="a3" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;max-width:540px;width:100%;margin-bottom:44px;opacity:0">'+statCards+'</div>'+
+    '<button class="a4" id="startBtn" style="padding:15px 46px;font-size:15px;font-weight:600;font-family:Syne,sans-serif;background:linear-gradient(135deg,var(--accent),#005eff);color:#000;border:none;border-radius:100px;cursor:pointer;box-shadow:0 0 28px rgba(0,200,255,.2),0 4px 18px rgba(0,0,0,.4);transition:all .25s;opacity:0">Analyze My Learning Profile →</button>'+
+    '<p class="a5" style="margin-top:28px;font-size:11px;color:var(--muted);text-align:center;opacity:0">Based on Student Learning System Report · 200 Nigerian Students · Scikit-learn Pipeline</p>'+
+    '</div>';
+}
+
+function renderForm(){
+  var f=state.form;
+  var step=state.step;
+  var STEPS=['Personal & Academic','Study Habits','Lifestyle & Submit'];
+  var bars=[1,2,3].map(function(i){return'<div class="progress-bar'+(i<=step?' active':'')+'" style="flex:1"></div>';}).join('');
+
+  function rangeRow(label,key,min,max,step2,unit){
+    return'<div class="range-wrap">'+
+      '<div class="range-row"><label class="label">'+label+'</label>'+
+      '<span class="font-m" style="font-size:13px;color:var(--accent);font-weight:600">'+f[key]+unit+'</span></div>'+
+      '<input type="range" min="'+min+'" max="'+max+'" step="'+step2+'" value="'+f[key]+'" data-key="'+key+'" class="range-inp">'+
+      '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>'+min+unit+'</span><span>'+max+unit+'</span></div>'+
+      '</div>';
+  }
+  function selRow(label,key,opts){
+    var options=opts.map(function(o){return'<option value="'+o+'"'+(f[key]===o?' selected':'')+'>'+o+'</option>';}).join('');
+    return'<div style="margin-bottom:14px"><label class="label">'+label+'</label>'+
+      '<select class="inp" data-key="'+key+'">'+options+'</select></div>';
+  }
+  function togRow(label,key){
+    var yActive=f[key]==='Yes';
+    return'<div style="margin-bottom:14px"><p class="label">'+label+'</p>'+
+      '<div style="display:flex;gap:8px">'+
+      '<button class="tog-btn" data-key="'+key+'" data-val="Yes" style="border:1px solid '+(yActive?'var(--accent)':'var(--border)')+';background:'+(yActive?'var(--dim)':'transparent')+';color:'+(yActive?'var(--accent)':'var(--muted)')+'">Yes</button>'+
+      '<button class="tog-btn" data-key="'+key+'" data-val="No" style="border:1px solid '+(!yActive?'var(--accent)':'var(--border)')+';background:'+(!yActive?'var(--dim)':'transparent')+';color:'+(!yActive?'var(--accent)':'var(--muted)')+'">No</button>'+
+      '</div></div>';
+  }
+
+  var inner='';
+  if(step===1){
+    inner='<h2 class="font-h" style="font-size:20px;margin-bottom:22px">Personal & Academic Info</h2>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px">'+
+      '<div style="grid-column:span 2;margin-bottom:14px"><label class="label">STUDENT NAME</label><input class="inp text-inp" data-key="studentName" type="text" value="'+f.studentName+'" placeholder="e.g. Tunde Adeyemi"></div>'+
+      '<div style="margin-bottom:14px">'+selRow('GENDER','gender',['Male','Female'])+'</div>'+
+      '<div style="margin-bottom:14px"><label class="label">AGE</label><input class="inp text-inp" data-key="age" type="number" value="'+f.age+'" min="16" max="30"></div>'+
+      '<div style="grid-column:span 2">'+selRow('PREFERRED LEARNING STYLE','preferredStyle',['Video','Reading','Practice','Mixed'])+'</div>'+
+      '</div>'+
+      '<div style="border-top:1px solid rgba(0,200,255,.08);margin:4px 0 20px;padding-top:20px">'+
+      '<p class="label" style="color:var(--accent);margin-bottom:14px">ACADEMIC PERFORMANCE</p>'+
+      rangeRow('QUIZ SCORE','quizScore',0,100,.5,'%')+
+      rangeRow('ASSIGNMENT SCORE','assignmentScore',0,100,.5,'%')+
+      selRow('PREVIOUS GPA','previousGPA',['1.0','1.5','2.0','2.5','3.0','3.5','4.0'])+
+      '</div>';
+  }else if(step===2){
+    inner='<h2 class="font-h" style="font-size:20px;margin-bottom:22px">Study Habits</h2>'+
+      rangeRow('STUDY HOURS PER DAY','studyHours',.5,8,.5,' hrs')+
+      rangeRow('ATTENDANCE RATE','attendance',30,100,1,'%')+
+      rangeRow('PRACTICE QUESTIONS ATTEMPTED','practiceQuestions',5,200,5,'')+
+      selRow('REVISION FREQUENCY','revisionFreq',['Daily','Twice a week','Once a week','Rarely','Never'])+
+      selRow('NUMBER OF ENROLLED SUBJECTS','noSubjects',['4','5','6','7','8']);
+  }else{
+    inner='<h2 class="font-h" style="font-size:20px;margin-bottom:22px">Lifestyle & Wellbeing</h2>'+
+      rangeRow('AVERAGE SLEEP HOURS PER NIGHT','sleepHours',3,10,.5,' hrs')+
+      selRow('MOTIVATION LEVEL','motivationLevel',['High','Medium','Low'])+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">'+
+      togRow('EXTRACURRICULAR','extracurricular')+
+      togRow('INTERNET ACCESS','internetAccess')+
+      togRow('PART-TIME JOB','partTimeJob')+
+      '</div>'+
+      '<div style="padding:16px;border-radius:12px;background:var(--dim);border:1px solid var(--border)">'+
+      '<p style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px">READY TO ANALYZE</p>'+
+      '<p style="font-size:12px;color:var(--muted);line-height:1.6">Linear regression + LIQ computation will run on your 8+ inputs, calibrated to the 200-student Nigerian HEI dataset.</p></div>';
+  }
+
+  var actionBtn=step<3
+    ?'<button id="nextBtn" class="btn-primary">Continue →</button>'
+    :'<button id="submitBtn" style="padding:13px;font-size:14px;font-weight:600;font-family:Syne,sans-serif;background:linear-gradient(135deg,var(--green),#00a870);color:#000;border:none;border-radius:12px;cursor:pointer;width:100%">🧠 Analyze My Learning Profile</button>';
+
+  return'<div class="screen" style="padding:40px 20px;display:flex;flex-direction:column;align-items:center">'+
+    '<div style="max-width:540px;width:100%;margin-bottom:22px">'+
+    '<button class="back-btn" id="backBtn">← Back</button>'+
+    '<div style="display:flex;gap:8px;margin-bottom:14px">'+bars+'</div>'+
+    '<p style="font-size:11px;color:var(--accent);letter-spacing:1px;text-transform:uppercase">Step '+step+' of 3 · '+STEPS[step-1]+'</p>'+
+    '</div>'+
+    '<div class="card a0" style="max-width:540px;width:100%;padding:28px">'+inner+
+    '<div style="margin-top:28px">'+actionBtn+'</div>'+
+    '</div></div>';
+}
+
+function renderResults(){
+  var res=state.results;
+  var f=state.form;
+  var pr=PROFILES[res.cluster];
+  var perf=res.perfData;
+  var liqD=res.liqData;
+  var grd=res.gradeData;
+
+  // Profile tips
+  var tipRows=pr.tips.map(function(t){
+    return'<div class="tip-row"><span style="color:'+pr.color+';flex-shrink:0">→</span><p style="font-size:12px;color:var(--muted);line-height:1.55">'+t+'</p></div>';
+  }).join('');
+
+  // Strengths
+  var strengthTags=pr.strengths.map(function(s){return'<span class="tag">'+s+'</span>';}).join('');
+
+  // Recommendations
+  var recCards=res.recs.map(function(r){
+    return'<div class="rec-card"><span style="font-size:18px;flex-shrink:0">'+r.i+'</span><p style="font-size:12px;color:var(--muted);line-height:1.65">'+r.t+'</p></div>';
+  }).join('');
+
+  // LIQ interpretation table
+  var bands=[{r:'≥130',l:'Exceptional',d:'Top 2%'},{r:'120–129',l:'High Intelligence',d:'Top 10%'},{r:'110–119',l:'Above Average',d:'Top 25%'},{r:'90–109',l:'Average',d:'Middle 50%'},{r:'80–89',l:'Developing',d:'Bottom 25%'},{r:'<80',l:'Needs Support',d:'Bottom 10%'}];
+  var liqTable='<table style="width:100%;border-collapse:collapse;font-size:12px">'+
+    '<thead><tr style="color:var(--muted)"><th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">LIQ Range</th><th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Band</th><th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Population</th></tr></thead><tbody>'+
+    bands.map(function(b,i){
+      var active=(res.liqVal>=130&&i===0)||(res.liqVal>=120&&res.liqVal<130&&i===1)||(res.liqVal>=110&&res.liqVal<120&&i===2)||(res.liqVal>=90&&res.liqVal<110&&i===3)||(res.liqVal>=80&&res.liqVal<90&&i===4)||(res.liqVal<80&&i===5);
+      return'<tr style="background:'+(active?'rgba(0,200,255,.06)':'transparent')+'"><td style="padding:7px 8px;border-bottom:1px solid rgba(0,200,255,.05);color:var(--muted)">'+b.r+'</td><td style="padding:7px 8px;border-bottom:1px solid rgba(0,200,255,.05);font-weight:'+(active?'600':'400')+';color:'+(active?liqD.color:'var(--muted)')+'">'+b.l+'</td><td style="padding:7px 8px;border-bottom:1px solid rgba(0,200,255,.05);color:var(--muted)">'+b.d+'</td></tr>';
+    }).join('')+
+    '</tbody></table>';
+
+  return'<div style="max-width:800px;margin:0 auto;padding:40px 20px 60px">'+
+
+    // Header
+    '<div class="a0" style="margin-bottom:28px">'+
+    '<p style="font-size:11px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Analysis Complete · Linear Regression + LIQ Detection</p>'+
+    '<h1 class="font-h" style="font-size:clamp(22px,4.5vw,38px);font-weight:800">'+(f.studentName?f.studentName+"'s Learning Profile":'Your Learning Profile')+'</h1>'+
+    '<p style="font-size:12px;color:var(--muted);margin-top:6px">Nigerian HEI Dataset · N=200 · Scikit-learn Linear Regression · K-Means (k=4)</p></div>'+
+
+    // Score + LIQ
+    '<div class="grid-2 a1" style="margin-bottom:14px">'+
+
+    // Predicted Score card
+    '<div class="card" style="padding:24px">'+
+    '<p class="label" style="margin-bottom:12px">PREDICTED FINAL SCORE</p>'+
+    '<div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:12px">'+
+    '<span class="font-m" style="font-size:52px;font-weight:700;color:'+grd.c+';line-height:1">'+res.score+'%</span>'+
+    '<span class="font-m" style="font-size:24px;color:'+grd.c+';font-weight:600;margin-bottom:4px;opacity:.75">'+grd.g+'</span>'+
+    '</div>'+
+    '<div class="perf-pill" style="background:'+perf.bg+';margin-bottom:12px">'+
+    '<span style="font-size:14px">'+perf.icon+'</span>'+
+    '<span style="font-size:12px;color:'+perf.color+';font-weight:500">'+perf.label+'</span>'+
+    '</div>'+
+    '<p style="font-size:11px;color:var(--muted);line-height:1.55">GPA equivalent: <strong style="color:var(--text)">'+grd.gpa+'</strong> · Computed by linear regression on 8+ features calibrated to the 200-student dataset</p>'+
+    '</div>'+
+
+    // LIQ Gauge card
+    '<div class="card" style="padding:24px;display:flex;flex-direction:column;align-items:center">'+
+    '<p class="label" style="margin-bottom:8px;align-self:flex-start">LEARNING INTELLIGENCE QUOTIENT</p>'+
+    buildGauge(res.liqVal,liqD.color)+
+    '<div style="text-align:center;margin-top:-4px">'+
+    '<p style="font-size:15px;font-weight:700;color:'+liqD.color+'">'+liqD.label+'</p>'+
+    '<p style="font-size:11px;color:var(--muted);margin-top:3px">'+liqD.desc+'</p>'+
+    '</div></div>'+
+    '</div>'+
+
+    // Profile
+    '<div class="card a2" style="padding:24px;margin-bottom:14px">'+
+    '<p class="label" style="margin-bottom:16px">LEARNING PROFILE CLUSTER</p>'+
+    '<div style="display:flex;gap:16px;flex-wrap:wrap">'+
+    '<div style="width:56px;height:56px;border-radius:14px;font-size:26px;display:flex;align-items:center;justify-content:center;background:'+pr.color+'12;border:1px solid '+pr.color+'28;flex-shrink:0">'+pr.icon+'</div>'+
+    '<div style="flex:1;min-width:200px">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">'+
+    '<h3 class="font-h" style="font-size:18px">'+res.cluster+'</h3>'+
+    '<span style="font-size:10px;padding:3px 10px;border-radius:100px;background:'+pr.color+'14;color:'+pr.color+';border:1px solid '+pr.color+'26">'+pr.pct+' of learners</span>'+
+    '</div>'+
+    '<p style="font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:14px">'+pr.desc+'</p>'+
+    '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">'+strengthTags+'</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px">'+tipRows+
+    '</div></div></div></div>'+
+
+    // Radar + LIQ Table
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:14px">'+
+    '<div class="card a3" style="padding:24px">'+
+    '<p class="label" style="margin-bottom:14px">LEARNING DIMENSIONS RADAR</p>'+
+    buildRadarSVG(res.radar,'#00c8ff')+
+    '</div>'+
+    '<div class="card a3" style="padding:24px">'+
+    '<p class="label" style="margin-bottom:14px">LIQ INTELLIGENCE SCALE</p>'+
+    liqTable+
+    '<div style="margin-top:14px;padding:12px;border-radius:10px;background:'+liqD.color+'0e;border:1px solid '+liqD.color+'28">'+
+    '<p style="font-size:11px;color:'+liqD.color+';font-weight:600;margin-bottom:4px">YOUR SCORE: '+res.liqVal+'</p>'+
+    '<p style="font-size:12px;color:var(--muted);line-height:1.5">'+liqD.label+' · '+liqD.desc+'</p>'+
+    '</div></div>'+
+    '</div>'+
+
+    // Recommendations
+    '<div class="card a4" style="padding:24px;margin-bottom:14px">'+
+    '<p class="label" style="margin-bottom:18px">PERSONALIZED DEVELOPMENT RECOMMENDATIONS</p>'+
+    '<div class="grid-3">'+recCards+'</div></div>'+
+
+    // Footer
+    '<button id="retryBtn" class="btn-ghost a5">← Analyze Another Student</button>'+
+    '</div>';
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  var app=document.getElementById('app');
+  if(state.screen==='hero'){app.innerHTML=renderHero();bindHero();}
+  else if(state.screen==='form'){app.innerHTML=renderForm();bindForm();}
+  else{app.innerHTML=renderResults();bindResults();}
+}
+
+function bindHero(){
+  var btn=document.getElementById('startBtn');
+  if(btn){
+    btn.addEventListener('mouseover',function(){this.style.transform='translateY(-2px)';this.style.boxShadow='0 0 44px rgba(0,200,255,.38),0 8px 28px rgba(0,0,0,.5)';});
+    btn.addEventListener('mouseout',function(){this.style.transform='none';this.style.boxShadow='0 0 28px rgba(0,200,255,.2),0 4px 18px rgba(0,0,0,.4)';});
+    btn.addEventListener('click',function(){state.screen='form';state.step=1;render();});
+  }
+}
+
+function bindForm(){
+  // Back
+  var backBtn=document.getElementById('backBtn');
+  if(backBtn)backBtn.addEventListener('click',function(){
+    if(state.step>1)state.step--;
+    else state.screen='hero';
+    render();
+  });
+  // Next
+  var nextBtn=document.getElementById('nextBtn');
+  if(nextBtn)nextBtn.addEventListener('click',function(){state.step++;render();});
+  // Submit
+  var submitBtn=document.getElementById('submitBtn');
+  if(submitBtn)submitBtn.addEventListener('click',analyze);
+  // Text inputs
+  document.querySelectorAll('.text-inp').forEach(function(el){
+    el.addEventListener('input',function(){setForm(this.getAttribute('data-key'),this.value);});
+  });
+  // Selects
+  document.querySelectorAll('select').forEach(function(el){
+    el.addEventListener('change',function(){setForm(this.getAttribute('data-key'),this.value);});
+  });
+  // Ranges
+  document.querySelectorAll('.range-inp').forEach(function(el){
+    el.addEventListener('input',function(){
+      var key=this.getAttribute('data-key');
+      setForm(key,parseFloat(this.value));
+      // Update display value
+      var row=this.parentElement;
+      var span=row.querySelector('.font-m');
+      var unit=this.getAttribute('data-unit')||'';
+      if(span){
+        // re-read the unit from the last text node
+        var unitEl=row.querySelector('.range-row span:last-child');
+        // Find unit from the label
+        var max=parseFloat(this.max);
+        var v=parseFloat(this.value);
+        var unitStr='';
+        if(key==='studyHours'||key==='sleepHours')unitStr=' hrs';
+        else if(key==='quizScore'||key==='assignmentScore'||key==='attendance')unitStr='%';
+        span.textContent=v+unitStr;
+      }
+    });
+  });
+  // Toggles
+  document.querySelectorAll('.tog-btn').forEach(function(el){
+    el.addEventListener('click',function(){
+      var key=this.getAttribute('data-key');
+      var val=this.getAttribute('data-val');
+      setForm(key,val);
+      render();
+    });
+  });
+}
+
+function bindResults(){
+  var retryBtn=document.getElementById('retryBtn');
+  if(retryBtn)retryBtn.addEventListener('click',function(){
+    state.screen='form';state.step=1;state.form=Object.assign({},INIT);render();
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
